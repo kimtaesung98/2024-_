@@ -5,72 +5,66 @@ public:
     int max;
     int min;
     Node* next;
-    Node* prev;
 
-    Node(int min, int max) : max(max), min(min), next(nullptr), prev(nullptr) {}
+    Node(int min, int max) : max(max), min(min), next(nullptr) {}
 };
 
-void delete_node(Node*& node) {
-    Node* current = node->prev;
-    if (current->next == node) {
-        delete node;
-        node = nullptr;
-        return;
+// 노드를 삭제하고 다음 노드를 반환
+Node* delete_node(Node*& head, Node* prev, Node* current) {
+    // 리스트 내에서 노드 삭제
+    if (prev == nullptr) { // Head node is being deleted
+        head = current->next; // Update head to the next node
     }
-    Node* node_next = node->next;
-    Node* node_prev = node->prev;
-    node_next->prev = node_prev;
-    node_prev->next = node_next;
-    delete node;
-    node = nullptr;
+    else {
+        prev->next = current->next; // Skip over the node being deleted
+    }
+    Node* next_node = current->next;
+    delete current; // Delete the current node
+    return next_node; // Return the next node in the list
 }
-Node* rotation(Node* node, int min, int max) {
+
+Node* rotation(Node*& node, int min, int max) {
     Node* current = node;
-    Node* start = node;
-    do {
-        if (!(current->max < max || current->min > min)) {
+    Node* prev = nullptr;
+
+    while (current != nullptr) {
+        // 노드와 범위가 겹칠 경우
+        if (!(current->max < min || current->min > max)) {
             max = std::max(current->max, max);
             min = std::min(current->min, min);
-            Node* to_delete = current;
-            current = rotation(current,min,max);
-            delete_node(to_delete);
+
+            // 현재 노드를 삭제하고 다음 노드로 이동
+            current = delete_node(node, prev, current);
         }
         else {
-            current = current->next;
+            prev = current; // Move prev to current
+            current = current->next; // Move to next node
         }
-    } while (current != start);
-
-    Node* new_node = new Node(min, max);
-    printf("make new_node : %d %d\n", min, max);
-    if (node == nullptr) {
-        new_node->next = new_node;
-        new_node->prev = new_node;
-        return new_node;
     }
-    current = node->prev;
-    new_node->next = node;
-    new_node->prev = current;
-    current->next = new_node;
-    node->prev = new_node;
-    return new_node;
+
+    // 새로운 노드 생성 및 연결
+    Node* new_node = new Node(min, max);
+    new_node->next = node; // Insert new node at the head
+    node = new_node; // Update head
+    return node;
 }
+
 Node* insert(Node* node, int min, int max) {
     if (node == nullptr) {
         Node* new_node = new Node(min, max);
-        new_node->next = new_node;
-        new_node->prev = new_node;
         return new_node;
     }
     return rotation(node, min, max);
 }
-void print(Node* node) {
-    if (node == nullptr) return;
 
+void print(Node* node) {
     Node* current = node;
-    do {
-        std::cout << current->min << " " << current->max << std::endl;
+    int sum = 0;
+    while (current != nullptr) {
+        sum += (current->max - current->min);
         current = current->next;
-    } while (current != node);
+    }
+    std::cout << sum;
 }
 
 int main() {
