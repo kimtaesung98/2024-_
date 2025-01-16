@@ -1,80 +1,106 @@
 ﻿#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
 
+// 노드 클래스 정의
 class Node {
 public:
-    int max;
-    int min;
-    Node* next;
+    int min;  // 저장할 최소값
+    int max;  // 저장할 최대값
+    Node* next; // 다음 노드를 가리키는 포인터
 
-    Node(int min, int max) : max(max), min(min), next(nullptr) {}
+    Node(int minVal, int maxVal) : min(minVal), max(maxVal), next(nullptr) {}
 };
 
-// 노드를 삭제하고 다음 노드를 반환
-Node* delete_node(Node*& head, Node* prev, Node* current) {
-    // 리스트 내에서 노드 삭제
-    if (prev == nullptr) { // Head node is being deleted
-        head = current->next; // Update head to the next node
-    }
-    else {
-        prev->next = current->next; // Skip over the node being deleted
-    }
-    Node* next_node = current->next;
-    delete current; // Delete the current node
-    return next_node; // Return the next node in the list
-}
+// 링크드 리스트 클래스 정의
+class LinkedList {
+public:
+    Node* head;
 
-Node* rotation(Node*& node, int min, int max) {
-    Node* current = node;
-    Node* prev = nullptr;
+    LinkedList() : head(nullptr) {}
 
-    while (current != nullptr) {
-        // 노드와 범위가 겹칠 경우
-        if (!(current->max < min || current->min > max)) {
-            max = std::max(current->max, max);
-            min = std::min(current->min, min);
-
-            // 현재 노드를 삭제하고 다음 노드로 이동
-            current = delete_node(node, prev, current);
+    void add(int minVal, int maxVal) {
+        Node* newNode = new Node(minVal, maxVal);
+        if (!head) {
+            head = newNode;
         }
         else {
-            prev = current; // Move prev to current
-            current = current->next; // Move to next node
+            Node* temp = head;
+            while (temp->next) {
+                temp = temp->next;
+            }
+            temp->next = newNode;
         }
     }
 
-    // 새로운 노드 생성 및 연결
-    Node* new_node = new Node(min, max);
-    new_node->next = node; // Insert new node at the head
-    node = new_node; // Update head
-    return node;
-}
+    void calculateDistances(int& totalDistance, int& lastMin, int& lastMax) {
+        Node* current = head;
+        if (!current) return; // 리스트가 비어있으면 종료
 
-Node* insert(Node* node, int min, int max) {
-    if (node == nullptr) {
-        Node* new_node = new Node(min, max);
-        return new_node;
-    }
-    return rotation(node, min, max);
-}
+        lastMin = current->min;  // 시작 노드의 최소값
+        lastMax = current->max;  // 시작 노드의 최대값
+        totalDistance = 0;       // 총 거리 초기화
 
-void print(Node* node) {
-    Node* current = node;
-    int sum = 0;
-    while (current != nullptr) {
-        sum += (current->max - current->min);
-        current = current->next;
+        while (current && current->next) {
+            Node* nextNode = current->next;
+
+            if (lastMax >= nextNode->min) {
+                // 현재 노드의 max값이 다음 노드의 min값보다 크거나 같을 경우 연결
+                lastMax = max(lastMax, nextNode->max); // 최대값 최신화
+            }
+            else {
+                // 연결되지 않는 경우, 현재까지의 유효한 거리 계산
+                int distance = lastMax - lastMin;
+                totalDistance += distance;
+
+                // 새로운 구간의 시작
+                lastMin = nextNode->min;
+                lastMax = nextNode->max;
+            }
+
+            current = nextNode; // 다음 노드로 이동
+        }
+
+        // 마지막 구간의 거리 계산
+        int finalDistance = lastMax - lastMin;
+        totalDistance += finalDistance;
     }
-    std::cout << sum;
-}
+
+    void clear() {
+        while (head) {
+            Node* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+};
 
 int main() {
-    int n, min, max;
-    std::cin >> n;
-    Node* node = nullptr;
-    for (int i = 0; i < n; i++) {
-        std::cin >> min >> max;
-        node = insert(node, min, max);
+    LinkedList list;
+    int n;
+
+    cin >> n;
+
+    for (int i = 0; i < n; ++i) {
+        int a, b;
+        cin >> a >> b;
+        // 최소값과 최대값을 리스트에 추가
+        if (a > b) swap(a, b); // 항상 a가 최소값이 되도록 조정
+        list.add(a, b);
     }
-    print(node);
+
+    int totalDistance = 0;
+    int lastMin = 0, lastMax = 0;
+
+    // 거리 계산
+    list.calculateDistances(totalDistance, lastMin, lastMax);
+
+    // 결과값 출력 (전체 거리)
+    cout << totalDistance << endl;
+
+    // 메모리 정리
+    list.clear();
+
     return 0;
 }
